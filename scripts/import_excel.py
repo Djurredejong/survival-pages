@@ -27,8 +27,10 @@ OUT_PATH = ROOT / "data" / "data.json"
 # ambiguiteit opgelost moet worden.
 NAME_ALIASES: dict[str, str] = {
     "brug af - brug op": "Brug op-Brug af",
+    "bruf af - brug op": "Brug op-Brug af",
     "boomslinger": "Touwslinger",
     "slootnet": "Sloot-net",
+    "finish boog": "Stormbaan",
 }
 
 
@@ -144,35 +146,76 @@ def match_team(raw: str, team_idx: dict[str, str]) -> tuple[str, bool]:
 def read_hindernissen(wb) -> list[dict]:
     ws = wb["hindernislijst"]
     rows = list(ws.iter_rows(values_only=True))
+    if len(rows) < 3:
+        return []
 
-    # header staat op rij 1 (0-indexed)
+    header = rows[1]
+    h6 = norm_str(header[6]).lower() if len(header) > 6 else ""
+    # Nieuwe lay-out (2026): kolom 6 = "Wie bericht", 7 = "BOUWER", geen "Vervangen door".
+    # Oude lay-out: 6 = "Vervangen door", 7 = "Wie bericht", 8 = "BOUWER".
+    if h6 and "wie bericht" in h6 and "vervang" not in h6:
+        col = {
+            "nr": 0,
+            "naam": 1,
+            "kort": 2,
+            "lang": 3,
+            "v1": 4,
+            "v2": 5,
+            "vervangen_door": None,
+            "wie_bericht": 6,
+            "bouwer": 7,
+            "toelichting": 8,
+            "uitlegger": 9,
+        }
+    else:
+        col = {
+            "nr": 0,
+            "naam": 1,
+            "kort": 2,
+            "lang": 3,
+            "v1": 4,
+            "v2": 5,
+            "vervangen_door": 6,
+            "wie_bericht": 7,
+            "bouwer": 8,
+            "toelichting": 9,
+            "uitlegger": 10,
+        }
+
+    def cell(r: tuple, key: str) -> str:
+        j = col[key]
+        if j is None:
+            return ""
+        if j >= len(r):
+            return ""
+        return norm_str(r[j])
+
     obstacles: list[dict] = []
     for r in rows[2:]:
-        nr = r[0]
+        nr = r[0] if len(r) > 0 else None
         if nr is None:
-            # Stop bij eerste lege regel - daarna komt 'Overige vrijwilligers'
             break
         try:
             nr_int = int(nr)
         except (TypeError, ValueError):
             continue
-        naam = norm_str(r[1])
+        naam = cell(r, "naam")
         if not naam:
             continue
         obstacles.append({
             "id": nr_int,
             "nr": nr_int,
             "naam": naam,
-            "kort": is_truthy_x(r[2]),
-            "lang": is_truthy_x(r[3]),
-            "vrijwilliger1": norm_str(r[4]),
-            "vrijwilliger2": norm_str(r[5]),
-            "vervangen_door": norm_str(r[6]),
-            "wie_bericht": norm_str(r[7]),
-            "bouwer_raw": norm_str(r[8]),
-            "toelichting": norm_str(r[9]),
-            "uitlegger": norm_str(r[10]) if len(r) > 10 else "",
-            "extra": norm_str(r[11]) if len(r) > 11 else "",
+            "kort": is_truthy_x(r[col["kort"]] if len(r) > col["kort"] else None),
+            "lang": is_truthy_x(r[col["lang"]] if len(r) > col["lang"] else None),
+            "vrijwilliger1": cell(r, "v1"),
+            "vrijwilliger2": cell(r, "v2"),
+            "vervangen_door": cell(r, "vervangen_door"),
+            "wie_bericht": cell(r, "wie_bericht"),
+            "bouwer_raw": cell(r, "bouwer"),
+            "toelichting": cell(r, "toelichting"),
+            "uitlegger": cell(r, "uitlegger"),
+            "extra": norm_str(r[col["uitlegger"] + 1]) if len(r) > col["uitlegger"] + 1 else "",
         })
     return obstacles
 
