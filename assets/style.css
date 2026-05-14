@@ -95,52 +95,6 @@ h3 { font-size: 1.05rem; margin: 1rem 0 0.4rem; color: var(--text-muted); }
 }
 .breadcrumb a::after { content: " ›"; color: var(--text-muted); }
 
-/* ---------- toolbar (search/filter) ---------- */
-.toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 0.75rem;
-}
-.toolbar input[type="search"],
-.toolbar input[type="text"] {
-  flex: 1 1 220px;
-  padding: 0.55rem 0.75rem;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
-  font-size: 1rem;
-  min-width: 0;
-}
-.toolbar input:focus {
-  outline: 2px solid var(--accent);
-  outline-offset: -1px;
-  border-color: var(--accent);
-}
-.chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-}
-.chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.35rem 0.7rem;
-  border: 1px solid var(--border-strong);
-  background: var(--surface);
-  border-radius: 999px;
-  font-size: 0.875rem;
-  cursor: pointer;
-  color: var(--text);
-  user-select: none;
-}
-.chip.is-active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: white;
-}
-
 /* ---------- table ---------- */
 .table-wrap {
   background: var(--surface);
@@ -157,7 +111,7 @@ table.data {
 table.data th,
 table.data td {
   text-align: left;
-  padding: 0.6rem 0.75rem;
+  padding: 0.5rem 0.75rem;
   border-bottom: 1px solid var(--border);
   vertical-align: top;
 }
@@ -170,6 +124,9 @@ table.data thead th {
   top: 0;
   cursor: pointer;
   white-space: nowrap;
+  font-size: 0.85rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 table.data thead th .sort-ind { color: var(--text-muted); margin-left: 0.25rem; font-size: 0.8em; }
 table.data tbody tr.link-row { cursor: pointer; }
@@ -177,6 +134,47 @@ table.data tbody tr.link-row:hover { background: var(--accent-soft); }
 table.data tbody tr:last-child td { border-bottom: none; }
 .col-nr { width: 3em; font-variant-numeric: tabular-nums; color: var(--text-muted); }
 .col-bool { width: 3.5em; text-align: center !important; }
+.col-num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.col-count { width: 4em; text-align: right; }
+.muted-cell { color: var(--text-muted); }
+
+/* Compactere variant - minder padding */
+table.data--compact th,
+table.data--compact td {
+  padding: 0.35rem 0.6rem;
+  font-size: 0.92rem;
+}
+
+/* Key-value tabel: 1e kolom als label */
+table.data--kv th[scope="row"] {
+  background: transparent;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 0.92rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  width: 9rem;
+  position: static;
+  cursor: default;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Route-label achter naam in lijsten */
+.route-tag {
+  color: var(--text-muted);
+  font-size: 0.85em;
+  white-space: nowrap;
+}
+
+/* Uitgeklapte detail-rij in materialen-tabel */
+tr.detail-row > td {
+  background: #fafbfc;
+  padding: 0.4rem 0.5rem 0.6rem 1.5rem;
+}
+.detail-inner {
+  box-shadow: none;
+  border-color: var(--border);
+}
 
 .badge {
   display: inline-block;
@@ -195,34 +193,43 @@ table.data tbody tr:last-child td { border-bottom: none; }
 .check { color: var(--success); font-weight: 700; }
 .dash { color: var(--text-muted); }
 
-/* ---------- cards / detail ---------- */
+/* ---------- panel (sectie met titel) ---------- */
+.panel {
+  margin-bottom: 0.9rem;
+}
+.panel__title {
+  margin: 0 0 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+.panel__empty {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.75rem;
+  margin: 0;
+}
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
-  padding: 1rem 1.25rem;
-  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.75rem;
 }
 .card h2:first-child { margin-top: 0; }
 
-.kv {
-  display: grid;
-  grid-template-columns: max-content 1fr;
-  gap: 0.35rem 1rem;
-  font-size: 0.95rem;
-}
-.kv dt { color: var(--text-muted); }
-.kv dd { margin: 0; }
-
 .photo-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 0.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 0.4rem;
 }
 .photo-grid img {
   width: 100%;
-  height: 160px;
+  height: 140px;
   object-fit: cover;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
@@ -230,19 +237,68 @@ table.data tbody tr:last-child td { border-bottom: none; }
   background: #eee;
 }
 
-/* ---------- collapsible / team list ---------- */
-.team-card { margin-bottom: 1rem; }
+/* ---------- bouwteam-kaart: 1 regel, klikbaar uitklappen ---------- */
+.team-card { margin-bottom: 0.4rem; padding: 0; }
 .team-card__head {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
+  align-items: center;
   gap: 0.5rem;
-  flex-wrap: wrap;
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  background: transparent;
+  border: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  border-radius: var(--radius);
 }
-.team-card__leden { color: var(--text-muted); font-size: 0.95rem; }
+.team-card__head:hover { background: var(--accent-soft); }
+.team-card.is-open .team-card__head {
+  border-radius: var(--radius) var(--radius) 0 0;
+  border-bottom: 1px solid var(--border);
+}
+.team-card__caret {
+  color: var(--text-muted);
+  width: 1em;
+  text-align: center;
+  font-size: 0.85em;
+}
+.team-card__name {
+  flex: 1 1 auto;
+  font-weight: 600;
+}
+.team-card__count {
+  flex: 0 0 auto;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.85em;
+  padding: 0.1em 0.55em;
+  background: #eef0f4;
+  border-radius: 999px;
+}
+.team-card__body { padding: 0.5rem 0.85rem 0.75rem; }
+.team-card__leden { color: var(--text-muted); font-size: 0.9rem; margin: 0 0 0.4rem; }
+.team-card__empty { margin: 0; }
 
-ul.plain { margin: 0.25rem 0; padding-left: 1.2rem; }
-ul.plain li { margin: 0.15rem 0; }
+.obstacle-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.obstacle-list li {
+  display: flex;
+  gap: 0.45rem;
+  align-items: baseline;
+  padding: 0.15rem 0;
+  font-size: 0.95rem;
+}
+.obstacle-list__nr {
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  min-width: 1.8em;
+  text-align: right;
+}
 
 /* ---------- mobile / responsive ---------- */
 @media (max-width: 640px) {
@@ -252,31 +308,113 @@ ul.plain li { margin: 0.15rem 0; }
   .site-title { font-size: 1rem; }
   .site-nav a { padding: 0.35rem 0.55rem; font-size: 0.9rem; }
 
+  /* Tabel die ook op mobiel echt een tabel blijft (compact) */
+  table.data--tabular-mobile {
+    display: table !important;
+    font-size: 0.85rem;
+  }
+  table.data--tabular-mobile thead { display: table-header-group !important; }
+  table.data--tabular-mobile tbody { display: table-row-group !important; }
+  table.data--tabular-mobile tr { display: table-row !important; }
+  table.data--tabular-mobile th,
+  table.data--tabular-mobile td {
+    display: table-cell !important;
+    width: auto !important;
+    padding: 0.3rem 0.4rem !important;
+    border-bottom: 1px solid var(--border) !important;
+  }
+  table.data--tabular-mobile tr {
+    border: none !important;
+    margin: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+  table.data--tabular-mobile td::before { content: none !important; }
+  /* Houd de table-wrap met witte achtergrond op mobiel voor deze variant */
+  .table-wrap:has(> table.data--tabular-mobile) {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow);
+  }
+
   /* tabel naar 'card per rij' transformatie */
   table.data thead { display: none; }
   table.data, table.data tbody, table.data tr, table.data td { display: block; width: 100%; }
   table.data tr {
     border: 1px solid var(--border);
-    border-radius: var(--radius);
-    margin-bottom: 0.5rem;
+    border-radius: var(--radius-sm);
+    margin-bottom: 0.35rem;
     background: var(--surface);
     box-shadow: var(--shadow);
-    padding: 0.5rem 0.5rem 0.4rem;
+    padding: 0.4rem 0.6rem;
   }
   table.data td {
     border: none;
-    padding: 0.2rem 0.25rem;
+    padding: 0.1rem 0;
     display: flex;
     gap: 0.5rem;
+    align-items: baseline;
+    font-size: 0.95rem;
   }
   table.data td::before {
     content: attr(data-label);
     color: var(--text-muted);
-    flex: 0 0 7rem;
-    font-size: 0.85rem;
+    flex: 0 0 5.5rem;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
   }
   table.data td[data-label=""]::before { display: none; }
-  table.data .col-nr { font-weight: 700; color: var(--text); }
+  table.data .col-nr {
+    font-weight: 700;
+    color: var(--text);
+    width: auto;
+  }
+  /* Op smal scherm: Nr. en Naam op één regel binnen overzicht-kaart */
+  table.data tr.link-row > td.col-nr {
+    display: inline-block;
+    width: auto;
+    margin-right: 0.5rem;
+    padding-right: 0;
+  }
+  table.data tr.link-row > td.col-nr + td {
+    display: inline;
+  }
+  table.data tr.link-row > td.col-nr + td + td {
+    display: block;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    padding-top: 0.15rem;
+  }
+  /* kv-tabel op mobiel ook compact, met label-kolom links */
+  table.data--kv th[scope="row"] {
+    display: inline-block;
+    width: 8rem;
+    border-bottom: none;
+    padding: 0.1rem 0;
+  }
+  table.data--kv tbody tr {
+    display: block;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    margin-bottom: 0.25rem;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    padding: 0.3rem 0.6rem;
+  }
+  table.data--kv tbody td {
+    display: inline;
+    padding: 0;
+    border: none;
+  }
+  table.data--kv tbody td::before { display: none; }
+
+  /* Detail-rij in materialen op mobiel */
+  tr.detail-row { padding: 0 !important; box-shadow: none; }
+  tr.detail-row > td { padding: 0; }
+  tr.detail-row .detail-inner { margin: 0.25rem 0 0.5rem; }
+
   .table-wrap { background: transparent; border: none; box-shadow: none; }
 }
 

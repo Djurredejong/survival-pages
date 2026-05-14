@@ -26,7 +26,7 @@ function applyFilter(list) {
   });
 }
 
-function renderDetail(m) {
+function renderDetailRow(m) {
   const rows = m.gebruiktBij
     .slice()
     .sort((a, b) => a.nr - b.nr)
@@ -38,37 +38,35 @@ function renderDetail(m) {
           { dataset: { label: "Hindernis" } },
           el("a", { href: `hindernis.html?id=${g.id}` }, g.naam)
         ),
-        el("td", { dataset: { label: "Aantal" } }, formatQty(g.aantal, g.eenheid) || "—"),
+        el(
+          "td",
+          { class: "col-num", dataset: { label: "Aantal" } },
+          formatQty(g.aantal, g.eenheid) || "—"
+        ),
         el(
           "td",
           { dataset: { label: "Leverancier" } },
           g.leverancier || el("span", { class: "muted" }, "—")
         ),
-        el(
-          "td",
-          { dataset: { label: "Opmerking" } },
-          g.opmerking || el("span", { class: "muted" }, "—")
-        ),
       ])
     );
 
-  return el("tr", {}, [
+  return el("tr", { class: "detail-row" }, [
     el(
       "td",
-      { colSpan: 4, style: "background:#fafbfc;padding:0.5rem 1rem" },
+      { colSpan: 4 },
       el(
         "div",
-        { class: "table-wrap", style: "margin:.25rem 0" },
-        el("table", { class: "data" }, [
+        { class: "table-wrap detail-inner" },
+        el("table", { class: "data data--compact data--tabular-mobile" }, [
           el(
             "thead",
             {},
             el("tr", {}, [
               el("th", { class: "col-nr" }, "Nr."),
               el("th", {}, "Hindernis"),
-              el("th", {}, "Aantal"),
+              el("th", { class: "col-num" }, "Aantal"),
               el("th", {}, "Leverancier"),
-              el("th", {}, "Opmerking"),
             ])
           ),
           el("tbody", {}, rows),
@@ -86,7 +84,7 @@ function render() {
   const list = applyFilter(all);
 
   if (list.length === 0) {
-    root.appendChild(el("div", { class: "card muted" }, "Geen materialen gevonden."));
+    root.appendChild(el("div", { class: "panel muted" }, "Geen materialen gevonden."));
     return;
   }
 
@@ -95,9 +93,9 @@ function render() {
     {},
     el("tr", {}, [
       el("th", {}, "Materiaal"),
-      el("th", {}, "Totaal"),
+      el("th", { class: "col-num" }, "Totaal"),
       el("th", {}, "Leverancier(s)"),
-      el("th", {}, "Gebruikt bij"),
+      el("th", { class: "col-num col-count" }, "Gebr."),
     ])
   );
 
@@ -119,11 +117,10 @@ function render() {
       },
       [
         el("td", { dataset: { label: "Materiaal" } }, [
+          el("span", { class: "muted small", style: "margin-right:.35em" }, isOpen ? "▾" : "▸"),
           el("strong", {}, m.naam),
-          " ",
-          el("span", { class: "muted small" }, isOpen ? "▴" : "▾"),
         ]),
-        el("td", { dataset: { label: "Totaal" } }, totalLabel(m)),
+        el("td", { class: "col-num", dataset: { label: "Totaal" } }, totalLabel(m)),
         el(
           "td",
           { dataset: { label: "Leverancier(s)" } },
@@ -133,20 +130,24 @@ function render() {
         ),
         el(
           "td",
-          { dataset: { label: "Gebruikt bij" } },
-          `${m.gebruiktBij.length} hindernis${m.gebruiktBij.length === 1 ? "" : "sen"}`
+          { class: "col-num col-count", dataset: { label: "Gebruikt bij" } },
+          String(m.gebruiktBij.length)
         ),
       ]
     );
     tbody.appendChild(row);
-    if (isOpen) tbody.appendChild(renderDetail(m));
+    if (isOpen) tbody.appendChild(renderDetailRow(m));
   }
 
   root.appendChild(
-    el("div", { class: "table-wrap" }, el("table", { class: "data" }, [thead, tbody]))
+    el(
+      "div",
+      { class: "table-wrap" },
+      el("table", { class: "data data--compact data--tabular-mobile" }, [thead, tbody])
+    )
   );
   root.appendChild(
-    el("p", { class: "muted small", style: "margin-top:.75rem" },
+    el("p", { class: "muted small", style: "margin-top:.5rem" },
       `${list.length} van ${all.length} materialen`)
   );
 }
@@ -159,10 +160,12 @@ async function init() {
     return;
   }
   const search = document.getElementById("search");
-  search.addEventListener("input", () => {
-    state.search = search.value;
-    render();
-  });
+  if (search) {
+    search.addEventListener("input", () => {
+      state.search = search.value;
+      render();
+    });
+  }
   render();
 }
 

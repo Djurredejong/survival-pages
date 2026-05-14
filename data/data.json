@@ -14,36 +14,7 @@
       "uitlegger": "",
       "extra": "",
       "bouwteam": "Rob Alink",
-      "materialen": [
-        {
-          "naam": "Touw",
-          "aantal": 2.0,
-          "eenheid": "",
-          "leverancier": "Peter",
-          "opmerking": ""
-        },
-        {
-          "naam": "Bindtouw",
-          "aantal": 1.0,
-          "eenheid": "",
-          "leverancier": "Peter",
-          "opmerking": ""
-        },
-        {
-          "naam": "Pallets",
-          "aantal": 2.0,
-          "eenheid": "",
-          "leverancier": "?",
-          "opmerking": "afscherming palen waterrand"
-        },
-        {
-          "naam": "Beschermmateriaal bomen",
-          "aantal": 2.0,
-          "eenheid": "",
-          "leverancier": "?",
-          "opmerking": ""
-        }
-      ],
+      "materialen": [],
       "fotos": []
     },
     {
@@ -61,20 +32,6 @@
       "extra": "",
       "bouwteam": "Rob Alink",
       "materialen": [
-        {
-          "naam": "Kruipnet",
-          "aantal": 1.0,
-          "eenheid": "",
-          "leverancier": "Erwin",
-          "opmerking": ""
-        },
-        {
-          "naam": "Piketpaaltjes",
-          "aantal": 4.0,
-          "eenheid": "",
-          "leverancier": "?",
-          "opmerking": ""
-        },
         {
           "naam": "Kruipnet",
           "aantal": 1.0,
@@ -225,20 +182,6 @@
           "eenheid": "",
           "leverancier": "Peter",
           "opmerking": ""
-        },
-        {
-          "naam": "Klimnet (2-3m lang) (uitklim)",
-          "aantal": 1.0,
-          "eenheid": "",
-          "leverancier": "?",
-          "opmerking": ""
-        },
-        {
-          "naam": "Meterpaaltjes",
-          "aantal": 2.0,
-          "eenheid": "",
-          "leverancier": "Peter",
-          "opmerking": "Onzeker of deze gebruikt worden"
         }
       ],
       "fotos": []
@@ -324,7 +267,22 @@
       "uitlegger": "",
       "extra": "",
       "bouwteam": "Huub Stegeman",
-      "materialen": [],
+      "materialen": [
+        {
+          "naam": "Kruipnet",
+          "aantal": 1.0,
+          "eenheid": "",
+          "leverancier": "Erwin",
+          "opmerking": ""
+        },
+        {
+          "naam": "Piketpaaltjes",
+          "aantal": 4.0,
+          "eenheid": "",
+          "leverancier": "?",
+          "opmerking": ""
+        }
+      ],
       "fotos": []
     },
     {
@@ -826,7 +784,36 @@
       "uitlegger": "Djurre",
       "extra": "",
       "bouwteam": "Peter Stegeman",
-      "materialen": [],
+      "materialen": [
+        {
+          "naam": "Touw",
+          "aantal": 2.0,
+          "eenheid": "",
+          "leverancier": "Peter",
+          "opmerking": ""
+        },
+        {
+          "naam": "Bindtouw",
+          "aantal": 1.0,
+          "eenheid": "",
+          "leverancier": "Peter",
+          "opmerking": ""
+        },
+        {
+          "naam": "Pallets",
+          "aantal": 2.0,
+          "eenheid": "",
+          "leverancier": "?",
+          "opmerking": "afscherming palen waterrand"
+        },
+        {
+          "naam": "Beschermmateriaal bomen",
+          "aantal": 2.0,
+          "eenheid": "",
+          "leverancier": "?",
+          "opmerking": ""
+        }
+      ],
       "fotos": []
     },
     {
@@ -980,7 +967,22 @@
       "uitlegger": "Nienke",
       "extra": "",
       "bouwteam": "Michiel",
-      "materialen": [],
+      "materialen": [
+        {
+          "naam": "Klimnet (2-3m lang) (uitklim)",
+          "aantal": 1.0,
+          "eenheid": "",
+          "leverancier": "?",
+          "opmerking": ""
+        },
+        {
+          "naam": "Meterpaaltjes",
+          "aantal": 2.0,
+          "eenheid": "",
+          "leverancier": "Peter",
+          "opmerking": "Onzeker of deze gebruikt worden"
+        }
+      ],
       "fotos": []
     },
     {

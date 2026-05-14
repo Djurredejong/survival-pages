@@ -1,94 +1,102 @@
-import { loadData, el, checkmark, formatQty, getQueryParam, errorBox } from "../app.js";
+import { loadData, el, formatQty, getQueryParam, errorBox } from "../app.js";
 
-function renderRoutes(obs) {
-  const badges = [];
-  if (obs.kort) badges.push(el("span", { class: "badge badge--ok" }, "Kort · 1,5 km"));
-  if (obs.lang) badges.push(el("span", { class: "badge badge--ok" }, "Lang · 4 km"));
-  if (!obs.kort && !obs.lang) badges.push(el("span", { class: "badge badge--muted" }, "Niet ingedeeld"));
-  return el("div", { style: "display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:.5rem" }, badges);
+function routeLabel(o) {
+  if (o.kort && o.lang) return "1,5 km + 4 km";
+  if (o.kort) return "1,5 km";
+  if (o.lang) return "4 km";
+  return "—";
 }
 
-function kvRow(label, value) {
-  if (!value) return null;
-  return [el("dt", {}, label), el("dd", {}, value)];
+function infoRows(obs) {
+  return [
+    ["Route", routeLabel(obs)],
+    ["Bouwteam",
+      obs.bouwteam
+        ? el("a", { href: `bouwteams.html#team-${encodeURIComponent(obs.bouwteam)}` }, obs.bouwteam)
+        : null,
+    ],
+    ["Vrijwilliger 1", obs.vrijwilliger1],
+    ["Vrijwilliger 2", obs.vrijwilliger2],
+    ["Uitleg", obs.uitlegger],
+    ["Wie bericht", obs.wie_bericht],
+    ["Vervangen door", obs.vervangen_door],
+    ["Toelichting", obs.toelichting],
+    ["Extra", obs.extra],
+  ].filter(([, v]) => v);
 }
 
 function renderInfo(obs) {
-  const kv = el("dl", { class: "kv" }, [
-    kvRow("Nummer", String(obs.nr)),
-    kvRow(
-      "Bouwteam",
-      obs.bouwteam
-        ? el("a", { href: `bouwteams.html#team-${encodeURIComponent(obs.bouwteam)}` }, obs.bouwteam)
-        : null
+  const rows = infoRows(obs).map(([k, v]) =>
+    el("tr", {}, [
+      el("th", { scope: "row" }, k),
+      el("td", {}, v),
+    ])
+  );
+  return el("section", { class: "panel" }, [
+    el("h2", { class: "panel__title" }, "Algemeen"),
+    el(
+      "div",
+      { class: "table-wrap" },
+      el("table", { class: "data data--compact data--kv" }, el("tbody", {}, rows))
     ),
-    kvRow("Vrijwilliger 1", obs.vrijwilliger1),
-    kvRow("Vrijwilliger 2", obs.vrijwilliger2),
-    kvRow("Uitleg", obs.uitlegger),
-    kvRow("Wie bericht", obs.wie_bericht),
-    kvRow("Vervangen door", obs.vervangen_door),
-    kvRow("Toelichting", obs.toelichting),
-    kvRow("Extra", obs.extra),
-  ].flat().filter(Boolean));
-
-  return el("section", { class: "card" }, [
-    el("h2", {}, "Algemeen"),
-    renderRoutes(obs),
-    kv,
   ]);
 }
 
 function renderMaterialen(obs) {
   const mats = obs.materialen || [];
-  if (mats.length === 0) {
-    return el("section", { class: "card" }, [
-      el("h2", {}, "Materialen"),
-      el("p", { class: "muted" }, "Geen materialen geregistreerd."),
-    ]);
-  }
-  const rows = mats.map((m) =>
-    el("tr", {}, [
-      el("td", { dataset: { label: "Materiaal" } }, m.naam),
-      el("td", { dataset: { label: "Aantal" } }, formatQty(m.aantal, m.eenheid) || "—"),
-      el(
-        "td",
-        { dataset: { label: "Leverancier" } },
-        m.leverancier || el("span", { class: "muted" }, "—")
-      ),
-      el(
-        "td",
-        { dataset: { label: "Opmerking" } },
-        m.opmerking || el("span", { class: "muted" }, "—")
-      ),
-    ])
-  );
-  return el("section", { class: "card" }, [
-    el("h2", {}, "Materialen"),
-    el(
-      "div",
-      { class: "table-wrap" },
-      el("table", { class: "data" }, [
-        el(
-          "thead",
-          {},
-          el("tr", {}, [
-            el("th", {}, "Materiaal"),
-            el("th", {}, "Aantal"),
-            el("th", {}, "Leverancier"),
-            el("th", {}, "Opmerking"),
-          ])
-        ),
-        el("tbody", {}, rows),
-      ])
-    ),
+  const body = mats.length === 0
+    ? el("p", { class: "muted small panel__empty" }, "Geen materialen geregistreerd.")
+    : el(
+        "div",
+        { class: "table-wrap" },
+        el("table", { class: "data data--compact data--tabular-mobile" }, [
+          el(
+            "thead",
+            {},
+            el("tr", {}, [
+              el("th", {}, "Materiaal"),
+              el("th", { class: "col-num" }, "Aantal"),
+              el("th", {}, "Leverancier"),
+            ])
+          ),
+          el(
+            "tbody",
+            {},
+            mats.map((m) =>
+              el("tr", {}, [
+                el("td", { dataset: { label: "Materiaal" } }, [
+                  m.naam,
+                  m.opmerking
+                    ? el("div", { class: "muted small" }, m.opmerking)
+                    : null,
+                ]),
+                el(
+                  "td",
+                  { class: "col-num", dataset: { label: "Aantal" } },
+                  formatQty(m.aantal, m.eenheid) || "—"
+                ),
+                el(
+                  "td",
+                  { dataset: { label: "Leverancier" } },
+                  m.leverancier || el("span", { class: "muted" }, "—")
+                ),
+              ])
+            )
+          ),
+        ])
+      );
+
+  return el("section", { class: "panel" }, [
+    el("h2", { class: "panel__title" }, "Materialen"),
+    body,
   ]);
 }
 
 function renderFotos(obs) {
   const fotos = obs.fotos || [];
   if (fotos.length === 0) return null;
-  return el("section", { class: "card" }, [
-    el("h2", {}, "Foto's"),
+  return el("section", { class: "panel" }, [
+    el("h2", { class: "panel__title" }, "Foto's"),
     el(
       "div",
       { class: "photo-grid" },
@@ -115,7 +123,7 @@ async function init() {
   const obs = data.obstacles.find((o) => o.id === id);
   if (!obs) {
     root.appendChild(
-      el("div", { class: "card" }, [
+      el("section", { class: "panel" }, [
         el("strong", {}, "Hindernis niet gevonden."),
         el("p", { class: "muted small" }, `Geen hindernis met id ${id}.`),
         el("p", {}, el("a", { href: "index.html" }, "← Terug naar overzicht")),

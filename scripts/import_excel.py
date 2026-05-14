@@ -238,26 +238,34 @@ def assign_materials_to_obstacles(
     mat_rows: list[dict],
 ) -> tuple[dict[int, list[dict]], list[dict]]:
     """Koppelt materiaal-rijen aan hindernissen via naam-match (canonical id =
-    obstacle.id uit de hindernislijst). Niet-gematchte rijen worden teruggegeven
-    als losse 'unmatched' lijst (worden niet meegenomen in alleen-obstakels modus).
+    obstacle.id uit de hindernislijst). Bij dubbele namen in de hindernislijst
+    wordt gedisambigueerd op basis van het dichtstbijzijnde nummer in de
+    materiaallijst. Niet-gematchte rijen worden teruggegeven als losse
+    'unmatched' lijst.
     """
-    name_index: dict[str, int] = {}
+    # name -> [obstacles with that name, in volgorde van hindernislijst]
+    name_buckets: dict[str, list[dict]] = {}
     for o in obstacles:
         key = normalize_name(o["naam"])
-        if key and key not in name_index:
-            name_index[key] = o["id"]
+        if not key:
+            continue
+        name_buckets.setdefault(key, []).append(o)
 
     per_obstacle: dict[int, list[dict]] = {}
     unmatched: list[dict] = []
     for row in mat_rows:
-        raw = row["hindernis_naam"]
-        key = normalize_name(raw)
+        key = normalize_name(row["hindernis_naam"])
         if key in NAME_ALIASES:
             key = normalize_name(NAME_ALIASES[key])
-        target = name_index.get(key)
-        if target is None:
+        bucket = name_buckets.get(key)
+        if not bucket:
             unmatched.append(row)
             continue
+        if len(bucket) == 1 or row["nr"] is None:
+            target = bucket[0]["id"]
+        else:
+            # disambigueer op nummer-afstand
+            target = min(bucket, key=lambda o: abs(o["nr"] - row["nr"]))["id"]
         per_obstacle.setdefault(target, []).append(row["materiaal"])
     return per_obstacle, unmatched
 
