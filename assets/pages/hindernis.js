@@ -18,7 +18,6 @@ function infoRows(obs) {
     ["Vrijwilliger 1", obs.vrijwilliger1],
     ["Vrijwilliger 2", obs.vrijwilliger2],
     ["Uitleg", obs.uitlegger],
-    ["Wie bericht", obs.wie_bericht],
     ["Vervangen door", obs.vervangen_door],
     ["Toelichting", obs.toelichting],
     ["Extra", obs.extra],

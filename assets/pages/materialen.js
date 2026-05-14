@@ -2,7 +2,6 @@ import { loadData, el, aggregateMaterials, formatQty, errorBox } from "../app.js
 
 const state = {
   data: null,
-  search: "",
   expanded: new Set(),
 };
 
@@ -11,19 +10,6 @@ function totalLabel(m) {
   if (m.hasNumeric) parts.push(formatQty(m.totaalNumeric, m.eenheid));
   if (m.nonNumeric.length) parts.push(...m.nonNumeric);
   return parts.length ? parts.join(" + ") : "—";
-}
-
-function applyFilter(list) {
-  const q = state.search.trim().toLowerCase();
-  if (!q) return list;
-  return list.filter((m) => {
-    const leverHay = [...m.leveranciers].join(" ").toLowerCase();
-    return (
-      m.naam.toLowerCase().includes(q) ||
-      leverHay.includes(q) ||
-      m.gebruiktBij.some((g) => g.naam.toLowerCase().includes(q))
-    );
-  });
 }
 
 function renderDetailRow(m) {
@@ -81,9 +67,8 @@ function render() {
   root.innerHTML = "";
 
   const all = aggregateMaterials(state.data.obstacles);
-  const list = applyFilter(all);
 
-  if (list.length === 0) {
+  if (all.length === 0) {
     root.appendChild(el("div", { class: "panel muted" }, "Geen materialen gevonden."));
     return;
   }
@@ -100,7 +85,7 @@ function render() {
   );
 
   const tbody = el("tbody", {});
-  for (const m of list) {
+  for (const m of all) {
     const key = m.naam.toLowerCase() + "|" + m.eenheid;
     const isOpen = state.expanded.has(key);
     const row = el(
@@ -147,8 +132,7 @@ function render() {
     )
   );
   root.appendChild(
-    el("p", { class: "muted small", style: "margin-top:.5rem" },
-      `${list.length} van ${all.length} materialen`)
+    el("p", { class: "muted small", style: "margin-top:.5rem" }, `${all.length} materialen`)
   );
 }
 
@@ -158,13 +142,6 @@ async function init() {
   } catch (err) {
     document.getElementById("content").appendChild(errorBox(err));
     return;
-  }
-  const search = document.getElementById("search");
-  if (search) {
-    search.addEventListener("input", () => {
-      state.search = search.value;
-      render();
-    });
   }
   render();
 }

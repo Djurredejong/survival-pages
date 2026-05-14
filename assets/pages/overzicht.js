@@ -30,7 +30,7 @@ function buildTable() {
   const headers = [
     { key: "nr", label: "Nr.", class: "col-nr" },
     { key: "naam", label: "Naam" },
-    { key: "bouwteam", label: "Bouwteam" },
+    { key: "bouwteam", label: "Team & uitleg" },
   ];
 
   const thead = el(
@@ -89,8 +89,24 @@ function buildTable() {
           nameCell,
           el(
             "td",
-            { dataset: { label: "" }, class: "muted-cell" },
-            o.bouwteam || el("span", { class: "muted" }, "—")
+            { dataset: { label: "" }, class: "ob-meta-cell" },
+            el("div", { class: "ob-meta" }, [
+              el("span", { class: "ob-meta__chunk" }, [
+                el("span", { class: "ob-meta__lbl" }, "Bouwteam:"),
+                " ",
+                o.bouwteam
+                  ? el("span", { class: "ob-meta__val" }, o.bouwteam)
+                  : el("span", { class: "muted" }, "—"),
+              ]),
+              el("span", { class: "ob-meta__sep", "aria-hidden": "true" }, " · "),
+              el("span", { class: "ob-meta__chunk" }, [
+                el("span", { class: "ob-meta__lbl" }, "Uitleg:"),
+                " ",
+                o.uitlegger
+                  ? el("span", { class: "ob-meta__val" }, o.uitlegger)
+                  : el("span", { class: "muted" }, "—"),
+              ]),
+            ])
           ),
         ]
       );
