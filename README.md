@@ -111,7 +111,7 @@ Een workflow (`.github/workflows/pages.yml`) publiceert de site automatisch bij 
 
 2. Op GitHub: **Settings → Pages → Build and deployment → Source = "GitHub Actions"**.
 
-3. De workflow draait automatisch en publiceert op `https://<gebruiker>.github.io/<repo>/`.
+3. De workflow draait automatisch en publiceert op `https://djurredejong.github.io/survival-pages/`.
 
 ## Aandachtspunten in de huidige data
 
