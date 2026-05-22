@@ -238,8 +238,10 @@ def normalize_name(s: str) -> str:
 
 def read_materialen_rows(wb) -> list[dict]:
     """Leest alle materiaalregels uit het materiaallijst-blad.
-    Geeft een lijst dicts met 'nr_raw', 'hindernis_naam' (uit kolom B), en
-    de materiaalgegevens."""
+    Geeft een lijst dicts met 'nr_raw', 'hindernis_naam' (uit kolom B), de
+    bouwer (kolom F) en de materiaalgegevens. Kolom F bevat in de praktijk
+    de naam van het bouwhoofd en wordt als primaire bron voor 'bouwteam'
+    gebruikt."""
     ws = wb["materiaallijst"]
     out: list[dict] = []
     started = False
@@ -257,13 +259,11 @@ def read_materialen_rows(wb) -> list[dict]:
 
         hindernis_naam = norm_str(row[1])
         materiaal = norm_str(row[2])
-        if not materiaal or materiaal.lower() == "niets":
-            continue
         if not hindernis_naam:
             continue
-        aantal, eenheid = parse_qty(row[3])
-        leverancier = norm_str(row[4])
-        opmerking = norm_str(row[6]) if len(row) > 6 else ""
+        # Bouwer-cel altijd onthouden voor team-matching, ook als er
+        # geen of slechts een 'niets'-materiaal in de regel staat.
+        bouwer_cel = norm_str(row[5]) if len(row) > 5 else ""
 
         nr_int: int | None = None
         try:
@@ -271,16 +271,24 @@ def read_materialen_rows(wb) -> list[dict]:
         except (TypeError, ValueError):
             nr_int = None
 
-        out.append({
-            "nr": nr_int,
-            "hindernis_naam": hindernis_naam,
-            "materiaal": {
+        materiaal_obj: dict | None = None
+        if materiaal and materiaal.lower() != "niets":
+            aantal, eenheid = parse_qty(row[3])
+            leverancier = norm_str(row[4])
+            opmerking = norm_str(row[6]) if len(row) > 6 else ""
+            materiaal_obj = {
                 "naam": materiaal,
                 "aantal": aantal,
                 "eenheid": eenheid,
                 "leverancier": leverancier,
                 "opmerking": opmerking,
-            },
+            }
+
+        out.append({
+            "nr": nr_int,
+            "hindernis_naam": hindernis_naam,
+            "bouwer_mat": bouwer_cel,
+            "materiaal": materiaal_obj,
         })
     return out
 
@@ -406,56 +414,72 @@ def write_sheet_photos(
     return added, unmatched
 
 
+def resolve_material_row_to_obstacle(
+    row: dict,
+    obstacles: list[dict],
+    name_buckets: dict[str, list[dict]],
+    nr_index: dict[int, dict],
+) -> dict | None:
+    """Bepaal welke hindernis bij een materiaallijst-rij hoort. Geeft het
+    obstacle terug of None."""
+    key = normalize_name(row["hindernis_naam"])
+    if key in NAME_ALIASES:
+        key = normalize_name(NAME_ALIASES[key])
+    bucket = name_buckets.get(key)
+    if not bucket:
+        prefix_bucket = [
+            o for o in obstacles
+            if normalize_name(o["naam"]).startswith(key + " ")
+            or normalize_name(o["naam"]) == key
+        ]
+        if prefix_bucket:
+            bucket = prefix_bucket
+        elif row["nr"] is not None and row["nr"] in nr_index:
+            bucket = [nr_index[row["nr"]]]
+        else:
+            return None
+    if len(bucket) == 1 or row["nr"] is None:
+        return bucket[0]
+    return min(bucket, key=lambda o: abs(o["nr"] - row["nr"]))
+
+
 def assign_materials_to_obstacles(
     obstacles: list[dict],
     mat_rows: list[dict],
-) -> tuple[dict[int, list[dict]], list[dict]]:
+) -> tuple[dict[int, list[dict]], dict[int, str], list[dict]]:
     """Koppelt materiaal-rijen aan hindernissen via naam-match (canonical id =
     obstacle.id uit de hindernislijst). Bij dubbele namen in de hindernislijst
     wordt gedisambigueerd op basis van het dichtstbijzijnde nummer in de
     materiaallijst. Niet-gematchte rijen worden teruggegeven als losse
     'unmatched' lijst.
+
+    Geeft daarnaast per obstacle.id de eerste niet-lege 'Bouwer'-waarde
+    uit de materiaallijst terug (deze is doorgaans betrouwbaarder dan de
+    BOUWER-kolom uit de hindernislijst).
     """
-    # name -> [obstacles with that name, in volgorde van hindernislijst]
     name_buckets: dict[str, list[dict]] = {}
     for o in obstacles:
         key = normalize_name(o["naam"])
         if not key:
             continue
         name_buckets.setdefault(key, []).append(o)
-
-    # Map ook van het nummer (uit hindernislijst) naar obstacle.
     nr_index: dict[int, dict] = {o["nr"]: o for o in obstacles}
 
     per_obstacle: dict[int, list[dict]] = {}
+    bouwer_by_id: dict[int, str] = {}
     unmatched: list[dict] = []
     for row in mat_rows:
-        key = normalize_name(row["hindernis_naam"])
-        if key in NAME_ALIASES:
-            key = normalize_name(NAME_ALIASES[key])
-        bucket = name_buckets.get(key)
-        if not bucket:
-            # Fallback: probeer eerst exacte naam met spaties weggehaald,
-            # daarna prefix-match (b.v. "Indianenbrug" → "Indianenbrug 1"/"2").
-            prefix_bucket = [
-                o for o in obstacles
-                if normalize_name(o["naam"]).startswith(key + " ")
-                or normalize_name(o["naam"]) == key
-            ]
-            if prefix_bucket:
-                bucket = prefix_bucket
-            elif row["nr"] is not None and row["nr"] in nr_index:
-                # laatste redmiddel: zelfde nr
-                bucket = [nr_index[row["nr"]]]
-            else:
+        target = resolve_material_row_to_obstacle(row, obstacles, name_buckets, nr_index)
+        if target is None:
+            if row["materiaal"] is not None:
                 unmatched.append(row)
-                continue
-        if len(bucket) == 1 or row["nr"] is None:
-            target = bucket[0]["id"]
-        else:
-            target = min(bucket, key=lambda o: abs(o["nr"] - row["nr"]))["id"]
-        per_obstacle.setdefault(target, []).append(row["materiaal"])
-    return per_obstacle, unmatched
+            continue
+        tid = target["id"]
+        if row["materiaal"] is not None:
+            per_obstacle.setdefault(tid, []).append(row["materiaal"])
+        if row["bouwer_mat"] and tid not in bouwer_by_id:
+            bouwer_by_id[tid] = row["bouwer_mat"]
+    return per_obstacle, bouwer_by_id, unmatched
 
 
 # ---------- main ----------
@@ -473,7 +497,9 @@ def main() -> int:
 
     obstacles = read_hindernissen(wb)
     mat_rows = read_materialen_rows(wb)
-    materialen_per_obs, unmatched_materials = assign_materials_to_obstacles(obstacles, mat_rows)
+    materialen_per_obs, bouwer_by_id, unmatched_materials = assign_materials_to_obstacles(
+        obstacles, mat_rows
+    )
 
     # Foto's uit het Excel-bestand halen en wegschrijven onder images/obstacles/<id>/.
     images_root = ROOT / "images" / "obstacles"
@@ -482,11 +508,19 @@ def main() -> int:
 
     unmatched: list[tuple[int, str]] = []
     for obs in obstacles:
-        raw = obs.pop("bouwer_raw")
-        team, ok = match_team(raw, team_idx)
+        raw_hl = obs.pop("bouwer_raw")
+        raw_ml = bouwer_by_id.get(obs["id"], "")
+        # Materiaallijst is leidend voor het bouwteam (bevat doorgaans de
+        # volledige bouwhoofd-naam); hindernislijst.BOUWER is fallback.
+        team, ok = ("", False)
+        for candidate in (raw_ml, raw_hl):
+            if candidate:
+                team, ok = match_team(candidate, team_idx)
+                if ok:
+                    break
         obs["bouwteam"] = team
-        if raw and not ok:
-            unmatched.append((obs["nr"], raw))
+        if (raw_ml or raw_hl) and not ok:
+            unmatched.append((obs["nr"], raw_ml or raw_hl))
         obs["materialen"] = materialen_per_obs.get(obs["nr"], [])
         # foto's: alles dat onder images/obstacles/<id>/ staat
         photo_dir = images_root / str(obs["id"])
