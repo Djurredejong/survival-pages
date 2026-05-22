@@ -10,6 +10,8 @@ import json
 import re
 import sys
 import unicodedata
+import xml.etree.ElementTree as ET
+import zipfile
 from collections import OrderedDict
 from pathlib import Path
 from typing import Any
@@ -31,6 +33,13 @@ NAME_ALIASES: dict[str, str] = {
     "boomslinger": "Touwslinger",
     "slootnet": "Sloot-net",
     "finish boog": "Stormbaan",
+}
+
+# Sheet-naam (foto-tab) -> hindernisnaam in de hindernislijst.
+# Alleen nodig als de sheet-naam afwijkt van de hindernisnaam (genormaliseerd).
+PHOTO_SHEET_ALIASES: dict[str, str] = {
+    "bernds special 1": "Bernd's special 1",
+    "bernds special 2": "Bernd's special 2",
 }
 
 
@@ -276,6 +285,127 @@ def read_materialen_rows(wb) -> list[dict]:
     return out
 
 
+_NS = {
+    "main": "http://schemas.openxmlformats.org/spreadsheetml/2006/main",
+    "r": "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
+    "rel": "http://schemas.openxmlformats.org/package/2006/relationships",
+}
+
+
+def extract_sheet_images(xlsx_path: Path) -> dict[str, list[tuple[str, bytes]]]:
+    """Geeft per sheet-naam een lijst (filename, bytes) van ingebedde
+    afbeeldingen terug. openpyxl laadt deze niet betrouwbaar, dus we lezen
+    de zip-structuur direct.
+    """
+    out: dict[str, list[tuple[str, bytes]]] = {}
+    with zipfile.ZipFile(xlsx_path) as z:
+        names = set(z.namelist())
+
+        def read_xml(p: str):
+            with z.open(p) as f:
+                return ET.parse(f).getroot()
+
+        wb = read_xml("xl/workbook.xml")
+        wb_rels = read_xml("xl/_rels/workbook.xml.rels")
+        rid2target = {
+            r.get("Id"): r.get("Target")
+            for r in wb_rels.findall("rel:Relationship", _NS)
+        }
+
+        def resolve(base_xml: str, target: str) -> str:
+            """Loste een relatief Target-pad op tegen het XML-bestand waarin
+            de relatie staat. Werkt met ../ en /."""
+            if target.startswith("/"):
+                return target.lstrip("/")
+            base_dir = "/".join(base_xml.split("/")[:-1])
+            parts = base_dir.split("/") if base_dir else []
+            for piece in target.split("/"):
+                if piece == "..":
+                    parts.pop()
+                elif piece == ".":
+                    continue
+                else:
+                    parts.append(piece)
+            return "/".join(parts)
+
+        for s in wb.findall("main:sheets/main:sheet", _NS):
+            name = s.get("name") or ""
+            rid = s.get(
+                "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id"
+            )
+            if not rid or rid not in rid2target:
+                continue
+            sheet_target = rid2target[rid]
+            sheet_xml = resolve("xl/workbook.xml", sheet_target)
+            sheet_rels = sheet_xml.rsplit("/", 1)[0] + "/_rels/" + sheet_xml.rsplit("/", 1)[1] + ".rels"
+            if sheet_rels not in names:
+                continue
+            r_root = read_xml(sheet_rels)
+            drawing_targets = [
+                r.get("Target")
+                for r in r_root.findall("rel:Relationship", _NS)
+                if "drawing" in (r.get("Type") or "")
+            ]
+            images: list[tuple[str, bytes]] = []
+            for d in drawing_targets:
+                d_path = resolve(sheet_xml, d)
+                d_rels = d_path.rsplit("/", 1)[0] + "/_rels/" + d_path.rsplit("/", 1)[1] + ".rels"
+                if d_rels not in names:
+                    continue
+                dr_root = read_xml(d_rels)
+                for r in dr_root.findall("rel:Relationship", _NS):
+                    if "image" in (r.get("Type") or ""):
+                        img_path = resolve(d_path, r.get("Target"))
+                        if img_path in names:
+                            with z.open(img_path) as f:
+                                images.append((img_path.split("/")[-1], f.read()))
+            if images:
+                out[name] = images
+    return out
+
+
+def write_sheet_photos(
+    sheet_images: dict[str, list[tuple[str, bytes]]],
+    obstacles: list[dict],
+    images_root: Path,
+) -> tuple[dict[int, list[str]], list[str]]:
+    """Schrijft per sheet-naam de bijbehorende afbeeldingen naar
+    images/obstacles/<id>/xlsx-N.<ext>. Bestaande xlsx-* bestanden worden
+    eerst opgeruimd, andere foto's blijven staan. Geeft per obstacle.id
+    de toegevoegde paden en een lijst sheet-namen zonder match terug.
+    """
+    name_to_id: dict[str, int] = {}
+    for o in obstacles:
+        name_to_id[normalize_name(o["naam"])] = o["id"]
+
+    added: dict[int, list[str]] = {}
+    unmatched: list[str] = []
+    for sheet_name, images in sheet_images.items():
+        key = normalize_name(sheet_name)
+        if key in (normalize_name(k) for k in PHOTO_SHEET_ALIASES):
+            key = normalize_name(PHOTO_SHEET_ALIASES[key])
+        target_id = name_to_id.get(key)
+        if target_id is None:
+            unmatched.append(sheet_name)
+            continue
+        obs_dir = images_root / str(target_id)
+        obs_dir.mkdir(parents=True, exist_ok=True)
+        # ruim oude xlsx-* bestanden op zodat hernoemen/verwijderen schoon gaat
+        for f in obs_dir.glob("xlsx-*"):
+            try:
+                f.unlink()
+            except OSError:
+                pass
+        for i, (orig_name, data) in enumerate(images, start=1):
+            ext = Path(orig_name).suffix.lower() or ".png"
+            out_path = obs_dir / f"xlsx-{i}{ext}"
+            out_path.write_bytes(data)
+            added.setdefault(target_id, []).append(
+                f"images/obstacles/{target_id}/{out_path.name}"
+            )
+    return added, unmatched
+
+
 def assign_materials_to_obstacles(
     obstacles: list[dict],
     mat_rows: list[dict],
@@ -294,6 +424,9 @@ def assign_materials_to_obstacles(
             continue
         name_buckets.setdefault(key, []).append(o)
 
+    # Map ook van het nummer (uit hindernislijst) naar obstacle.
+    nr_index: dict[int, dict] = {o["nr"]: o for o in obstacles}
+
     per_obstacle: dict[int, list[dict]] = {}
     unmatched: list[dict] = []
     for row in mat_rows:
@@ -302,12 +435,24 @@ def assign_materials_to_obstacles(
             key = normalize_name(NAME_ALIASES[key])
         bucket = name_buckets.get(key)
         if not bucket:
-            unmatched.append(row)
-            continue
+            # Fallback: probeer eerst exacte naam met spaties weggehaald,
+            # daarna prefix-match (b.v. "Indianenbrug" → "Indianenbrug 1"/"2").
+            prefix_bucket = [
+                o for o in obstacles
+                if normalize_name(o["naam"]).startswith(key + " ")
+                or normalize_name(o["naam"]) == key
+            ]
+            if prefix_bucket:
+                bucket = prefix_bucket
+            elif row["nr"] is not None and row["nr"] in nr_index:
+                # laatste redmiddel: zelfde nr
+                bucket = [nr_index[row["nr"]]]
+            else:
+                unmatched.append(row)
+                continue
         if len(bucket) == 1 or row["nr"] is None:
             target = bucket[0]["id"]
         else:
-            # disambigueer op nummer-afstand
             target = min(bucket, key=lambda o: abs(o["nr"] - row["nr"]))["id"]
         per_obstacle.setdefault(target, []).append(row["materiaal"])
     return per_obstacle, unmatched
@@ -330,6 +475,11 @@ def main() -> int:
     mat_rows = read_materialen_rows(wb)
     materialen_per_obs, unmatched_materials = assign_materials_to_obstacles(obstacles, mat_rows)
 
+    # Foto's uit het Excel-bestand halen en wegschrijven onder images/obstacles/<id>/.
+    images_root = ROOT / "images" / "obstacles"
+    sheet_images = extract_sheet_images(xlsx_path)
+    _written, unmatched_photo_sheets = write_sheet_photos(sheet_images, obstacles, images_root)
+
     unmatched: list[tuple[int, str]] = []
     for obs in obstacles:
         raw = obs.pop("bouwer_raw")
@@ -338,8 +488,8 @@ def main() -> int:
         if raw and not ok:
             unmatched.append((obs["nr"], raw))
         obs["materialen"] = materialen_per_obs.get(obs["nr"], [])
-        # bekende foto's: scan images/obstacles/<id>/
-        photo_dir = ROOT / "images" / "obstacles" / str(obs["id"])
+        # foto's: alles dat onder images/obstacles/<id>/ staat
+        photo_dir = images_root / str(obs["id"])
         photos: list[str] = []
         if photo_dir.exists():
             for f in sorted(photo_dir.iterdir()):
@@ -363,6 +513,7 @@ def main() -> int:
                 }
                 for r in unmatched_materials
             ],
+            "unmatched_photo_sheets": unmatched_photo_sheets,
         },
     }
 
@@ -386,6 +537,13 @@ def main() -> int:
                 f"  hindernis={r['hindernis_naam']!r} "
                 f"(nr in materiaallijst={r['nr']}) materiaal={r['materiaal']['naam']!r}"
             )
+    if unmatched_photo_sheets:
+        print(
+            "LET OP - foto-werkbladen zonder bijbehorende hindernis "
+            "(voeg eventueel een entry toe aan PHOTO_SHEET_ALIASES):"
+        )
+        for s in unmatched_photo_sheets:
+            print(f"  sheet={s!r}")
     return 0
 
 
