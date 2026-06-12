@@ -14,7 +14,7 @@
       "uitlegger": "Huub",
       "geinformeerd_per_app": false,
       "extra": "",
-      "bouwteam": "Bernd Veldhuis",
+      "bouwteam": "Rob Alink",
       "materialen": [],
       "fotos": [
         "images/obstacles/1/xlsx-1.jpg"
@@ -927,7 +927,7 @@
           "naam": "Ladder",
           "aantal": 1.0,
           "eenheid": "",
-          "leverancier": "?",
+          "leverancier": "Huub",
           "opmerking": ""
         }
       ],
@@ -1067,7 +1067,7 @@
       "uitlegger": "Nienke",
       "geinformeerd_per_app": true,
       "extra": "",
-      "bouwteam": "",
+      "bouwteam": "Martijn Janzen",
       "materialen": [
         {
           "naam": "Touw",
@@ -1285,7 +1285,7 @@
           "naam": "sproeier",
           "aantal": 1.0,
           "eenheid": "",
-          "leverancier": "Erwin",
+          "leverancier": "Huub",
           "opmerking": ""
         }
       ],
