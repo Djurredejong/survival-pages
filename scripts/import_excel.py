@@ -56,6 +56,14 @@ def is_truthy_x(value: Any) -> bool:
     return s in {"x", "ja", "j", "yes", "y", "true", "1"}
 
 
+def is_marked(value: Any) -> bool:
+    """Soepele check voor markeer-cellen: 'x', 'xx', 'x ' enz. tellen allemaal."""
+    s = norm_str(value).lower()
+    if not s:
+        return False
+    return s.startswith("x") or s in {"ja", "j", "yes", "y", "true", "1"}
+
+
 def parse_qty(value: Any) -> tuple[float | str | None, str]:
     """Geeft (aantal, eenheid) terug. Aantal is float waar mogelijk,
     anders de originele string (b.v. '70m'); eenheid blijft leeg
@@ -175,6 +183,7 @@ def read_hindernissen(wb) -> list[dict]:
             "bouwer": 7,
             "toelichting": 8,
             "uitlegger": 9,
+            "geinformeerd_per_app": 11,
         }
     else:
         col = {
@@ -189,6 +198,7 @@ def read_hindernissen(wb) -> list[dict]:
             "bouwer": 8,
             "toelichting": 9,
             "uitlegger": 10,
+            "geinformeerd_per_app": None,
         }
 
     def cell(r: tuple, key: str) -> str:
@@ -224,6 +234,12 @@ def read_hindernissen(wb) -> list[dict]:
             "bouwer_raw": cell(r, "bouwer"),
             "toelichting": cell(r, "toelichting"),
             "uitlegger": cell(r, "uitlegger"),
+            "geinformeerd_per_app": (
+                is_marked(r[col["geinformeerd_per_app"]])
+                if col["geinformeerd_per_app"] is not None
+                and len(r) > col["geinformeerd_per_app"]
+                else False
+            ),
             "extra": norm_str(r[col["uitlegger"] + 1]) if len(r) > col["uitlegger"] + 1 else "",
         })
     return obstacles

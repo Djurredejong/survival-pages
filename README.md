@@ -69,6 +69,7 @@ Het `aantal` mag een getal zijn (wordt opgeteld op de materialen-pagina) of een 
   "wie_bericht": "",
   "toelichting": "",
   "uitlegger": "",
+  "geinformeerd_per_app": false,
   "extra": "",
   "bouwteam": "Rob Alink",
   "materialen": [],

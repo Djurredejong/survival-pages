@@ -284,6 +284,22 @@ tr.detail-row > td {
   background: #eee;
 }
 
+.kaart-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--accent);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  padding: 0.5rem;
+}
+.kaart-wrap img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-sm);
+}
+
 /* ---------- bouwteam-kaart: 1 regel, klikbaar uitklappen ---------- */
 .team-card.card {
   border-left-color: var(--accent);

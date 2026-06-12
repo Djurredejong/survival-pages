@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Materialen · Survival</title>
+  <title>Kaart · Survival</title>
   <link rel="stylesheet" href="assets/style.css" />
 </head>
 <body>
@@ -20,16 +20,18 @@
   </header>
 
   <main>
-    <h1>Materialen — totaaloverzicht</h1>
-    <p class="muted">Aantallen worden opgeteld over alle hindernissen. Klik op een materiaal voor de details.</p>
+    <h1>Kaart</h1>
+    <p class="muted">Overzichtskaart van het parcours. Tik op de kaart om hem op volledig formaat te openen.</p>
 
-    <div id="content"></div>
+    <div class="kaart-wrap">
+      <a href="images/kaart.png" target="_blank" rel="noopener">
+        <img src="images/kaart.png" alt="Overzichtskaart van het parcours" loading="lazy" />
+      </a>
+    </div>
   </main>
 
   <footer class="site-footer">
     <span class="muted">Gegevens uit <code>data/data.json</code></span>
   </footer>
-
-  <script type="module" src="assets/pages/materialen.js"></script>
 </body>
 </html>

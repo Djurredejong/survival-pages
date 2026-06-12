@@ -18,6 +18,7 @@ function infoRows(obs) {
     ["Vrijwilliger 1", obs.vrijwilliger1],
     ["Vrijwilliger 2", obs.vrijwilliger2],
     ["Uitleg", obs.uitlegger],
+    ["Geïnformeerd per app", obs.geinformeerd_per_app ? "Ja" : "Nee"],
     ["Vervangen door", obs.vervangen_door],
     ["Toelichting", obs.toelichting],
     ["Extra", obs.extra],
